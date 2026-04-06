@@ -1,0 +1,11 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  extends: [
+    "config:recommended"
+  ],
+
+  platformAutomerge: true,
+  automergeType: "pr",
+  prConcurrentLimit: 10
+}

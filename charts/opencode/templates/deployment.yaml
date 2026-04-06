@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opencode.fullname" . }}
+  labels:
+    {{- include "opencode.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "opencode.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "opencode.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "opencode.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort | default 3000 }}
+              protocol: TCP
+          env:
+            - name: UI_PASSWORD
+              {{- if .Values.env.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.existingSecret }}
+                  key: {{ .Values.env.existingSecretKey | default "ui-password" }}
+              {{- else }}
+              value: {{ .Values.env.UI_PASSWORD | quote }}
+              {{- end }}
+            {{- with .Values.env }}
+            {{- range $key, $value := . }}
+            {{- if not (has $key (list "UI_PASSWORD" "existingSecret" "existingSecretKey")) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            - name: OPENCODE_HOST
+              value: {{ if .Values.ingress.enabled -}}
+                     {{- (printf "http://%s" (index .Values.ingress.hosts 0).host) | quote -}}
+                     {{- else if .Values.gateway.enabled -}}
+                     {{- (printf "http://%s" .Values.gateway.hostname) | quote -}}
+                     {{- else -}}
+                     {{- (printf "http://%s" (include "opencode.fullname" .)) | quote -}}
+                     {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: workspace
+              mountPath: /home/opencode
+            {{- end }}
+            {{- if .Values.config.opencodeJson }}
+            - name: config
+              mountPath: /home/opencode/.config/opencode/opencode.json
+              subPath: opencode.json
+            {{- end }}
+            {{- if .Values.config.settingsJson }}
+            - name: config
+              mountPath: /home/opencode/.config/openchamber/settings.json
+              subPath: settings.json
+            {{- end }}
+            {{- if .Values.config.opennomadJson }}
+            - name: config
+              mountPath: /home/opencode/.config/opennomad/opennomad.json
+              subPath: opennomad.json
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: {{ include "opencode.fullname" . }}-workspace
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "opencode.fullname" . }}-config
+        {{- with .Values.volumes }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

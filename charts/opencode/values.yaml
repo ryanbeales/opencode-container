@@ -1,0 +1,98 @@
+# Default values for opencode.
+
+replicaCount: 1
+image:
+  repository: ghcr.io/ryanbeales/opencode-container
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.0.6"
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+  rbac:
+    enabled: true
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  fsGroup: 1000
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
+
+gateway:
+  enabled: false
+
+# High-Performance Node selection (e.g., node with RTX 4090)
+nodeSelector: {}
+#   gpu-node: "true"
+
+env:
+  UI_PASSWORD: "be-creative-here"
+  # existingSecret: "opencode-auth"
+  # existingSecretKey: "ui-password"
+  OLLAMA_HOST: "http://ollama:11434"
+  OLLAMA_MODEL: "gpt-oss:20b"
+
+# --- Integrated Ollama Backend ---
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+  # For MacOS Minikube/Apple Silicon, resources are typically not managed via K8s limits
+  # but via host-bypass. This chart prioritizes the K3s/Nvidia path.
+
+# --- Custom Sticky Configurations ---
+config:
+  opencodeJson: "" # Raw JSON for opencode.json
+  settingsJson: "" # Raw JSON for settings.json
+  opennomadJson: "" # Raw JSON for opennomad.json
+
+persistence:
+  enabled: true
+  size: 50Gi
+  accessMode: ReadWriteOnce
+  # storageClass: "crobasaurus-nfs"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+
+autoscaling:
+  enabled: false
+
+volumes: []
+volumeMounts: []
+tolerations: []
+affinity: {}
