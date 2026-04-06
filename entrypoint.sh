@@ -96,7 +96,7 @@ cat <<EOF > /home/opencode/ecosystem.config.json
 EOF
 
 # Final permission sweep
-chown -R opencode:opencode /home/opencode
+chown -R opencode:opencode /home/opencode 2>/dev/null || true
 chmod 644 /home/opencode/.config/openchamber/settings.json 2>/dev/null || true
 chmod 644 /home/opencode/.config/opencode/opencode.json 2>/dev/null || true
 
