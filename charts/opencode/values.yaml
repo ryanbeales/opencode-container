@@ -25,6 +25,7 @@ securityContext: {}
   # runAsGroup: 1000
   # runAsNonRoot: true
 
+runAsRoot: false
 service:
   type: ClusterIP
   port: 80

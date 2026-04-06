@@ -95,16 +95,24 @@ cat <<EOF > /home/opencode/ecosystem.config.json
 }
 EOF
 
-# Final permission sweep
-chown -R opencode:opencode /home/opencode 2>/dev/null || true
+# Final permission sweep (skip if root-only mode requested for some paths)
+[[ "${RUN_AS_ROOT}" != "true" ]] && chown -R opencode:opencode /home/opencode 2>/dev/null || true
 chmod 644 /home/opencode/.config/openchamber/settings.json 2>/dev/null || true
 chmod 644 /home/opencode/.config/opencode/opencode.json 2>/dev/null || true
 
-# If we are just running a one-off command, use gosu directly
+# If we are just running a one-off command, use gosu directly unless root mode
 if [ "$#" -gt 0 ]; then
-  exec gosu opencode "$@"
+  if [[ "${RUN_AS_ROOT}" == "true" ]]; then
+    exec "$@"
+  else
+    exec gosu opencode "$@"
+  fi
 fi
 
 # Launch with PM2-runtime (designed for Docker PID 1 / managed signals)
 echo "info  Launching PM2 orchestrator..."
-exec gosu opencode pm2-runtime start /home/opencode/ecosystem.config.json
+if [[ "${RUN_AS_ROOT}" == "true" ]]; then
+  exec pm2-runtime start /home/opencode/ecosystem.config.json
+else
+  exec gosu opencode pm2-runtime start /home/opencode/ecosystem.config.json
+fi
