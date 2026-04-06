@@ -20,10 +20,10 @@ podAnnotations: {}
 podLabels: {}
 podSecurityContext:
   fsGroup: 1000
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  runAsNonRoot: true
+securityContext: {}
+  # runAsUser: 1000
+  # runAsGroup: 1000
+  # runAsNonRoot: true
 
 service:
   type: ClusterIP
@@ -54,6 +54,8 @@ ollama:
     repository: ollama/ollama
     tag: latest
     pullPolicy: IfNotPresent
+  runtimeClassName: ""
+  nodeSelector: {}
   resources:
     limits:
       nvidia.com/gpu: 1
@@ -69,7 +71,8 @@ config:
 persistence:
   enabled: true
   size: 50Gi
-  accessMode: ReadWriteOnce
+  accessModes:
+    - ReadWriteOnce
   # storageClass: "crobasaurus-nfs"
 
 resources:
