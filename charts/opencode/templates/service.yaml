@@ -4,7 +4,7 @@ metadata:
   name: {{ include "opencode.fullname" . }}
   labels:
     {{- include "opencode.labels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ if .Values.splitDeployment }}ui{{ else }}combined{{ end }}
+    app.kubernetes.io/component: {{ ternary "ui" "combined" .Values.splitDeployment }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -13,7 +13,7 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "opencode.selectorLabelsComponent" (dict "context" . "component" (if .Values.splitDeployment "ui" "combined")) | nindent 4 }}
+    {{- include "opencode.selectorLabelsComponent" (dict "context" . "component" (ternary "ui" "combined" .Values.splitDeployment)) | nindent 4 }}
 ---
 {{- if .Values.splitDeployment }}
 apiVersion: v1
