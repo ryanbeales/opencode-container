@@ -12,7 +12,7 @@ export OLLAMA_MODEL="${OLLAMA_MODEL:-gpt-oss:20b}"
 export OPENCODE_MODEL="ollama/${OLLAMA_MODEL}"
 export ZEN_MODEL="ollama/${OLLAMA_MODEL}"
 export OPENCODE_SKIP_START=true
-export OPENCODE_HOST="http://localhost:41851"
+export OPENCODE_HOST="${OPENCODE_HOST:-http://localhost:41851}"
 
 # Ensure home exists
 mkdir -p /home/opencode
