@@ -1,60 +1,71 @@
+{{- $components := (list "combined") -}}
+{{- if .Values.splitDeployment -}}
+  {{- $components = (list "server" "ui") -}}
+{{- end -}}
+{{- range $component := $components -}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "opencode.fullname" . }}
+  name: {{ include "opencode.fullname" $ }}{{ if $.Values.splitDeployment }}-{{ $component }}{{ end }}
   labels:
-    {{- include "opencode.labels" . | nindent 4 }}
+    {{- include "opencode.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  {{- if not $.Values.autoscaling.enabled }}
+  replicas: {{ $.Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "opencode.selectorLabels" . | nindent 6 }}
+      {{- include "opencode.selectorLabelsComponent" (dict "context" $ "component" $component) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with $.Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "opencode.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
+        {{- include "opencode.selectorLabelsComponent" (dict "context" $ "component" $component) | nindent 8 }}
+        {{- with $.Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "opencode.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      serviceAccountName: {{ include "opencode.serviceAccountName" $ }}
+      {{- with $.Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
+        - name: {{ $.Chart.Name }}
+          {{- with $.Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.targetPort | default 3000 }}
+              containerPort: {{ if eq $component "server" }}41851{{ else }}{{ $.Values.service.targetPort | default 3000 }}{{ end }}
               protocol: TCP
           env:
+            - name: RUN_SERVER
+              value: {{ if or (eq $component "server") (eq $component "combined") }}"true"{{ else }}"false"{{ end }}
+            - name: RUN_UI
+              value: {{ if or (eq $component "ui") (eq $component "combined") }}"true"{{ else }}"false"{{ end }}
             - name: UI_PASSWORD
-              {{- if .Values.env.existingSecret }}
+              {{- if $.Values.env.existingSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.env.existingSecret }}
-                  key: {{ .Values.env.existingSecretKey | default "ui-password" }}
+                  name: {{ $.Values.env.existingSecret }}
+                  key: {{ $.Values.env.existingSecretKey | default "ui-password" }}
               {{- else }}
-              value: {{ .Values.env.UI_PASSWORD | quote }}
+              value: {{ $.Values.env.UI_PASSWORD | quote }}
               {{- end }}
-            {{- with .Values.env }}
+            {{- with $.Values.env }}
             {{- range $key, $value := . }}
             {{- if not (has $key (list "UI_PASSWORD" "existingSecret" "existingSecretKey")) }}
             - name: {{ $key }}
@@ -63,71 +74,72 @@ spec:
             {{- end }}
             {{- end }}
             - name: RUN_AS_ROOT
-              value: {{ .Values.runAsRoot | quote }}
+              value: {{ $.Values.runAsRoot | quote }}
             - name: OPENCODE_HOST
-              value: {{ if .Values.ingress.enabled -}}
-                     {{- (printf "http://%s" (index .Values.ingress.hosts 0).host) | quote -}}
-                     {{- else if .Values.gateway.enabled -}}
-                     {{- (printf "http://%s" .Values.gateway.hostname) | quote -}}
+              value: {{ if $.Values.ingress.enabled -}}
+                     {{- (printf "http://%s" (index $.Values.ingress.hosts 0).host) | quote -}}
+                     {{- else if $.Values.gateway.enabled -}}
+                     {{- (printf "http://%s" $.Values.gateway.hostname) | quote -}}
                      {{- else -}}
-                     {{- (printf "http://%s" (include "opencode.fullname" .)) | quote -}}
+                     {{- (printf "http://%s" (include "opencode.fullname" $)) | quote -}}
                      {{- end }}
-          {{- with .Values.livenessProbe }}
+          {{- with $.Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.readinessProbe }}
+          {{- with $.Values.readinessProbe }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.resources }}
+          {{- with (index $.Values $component).resources | default $.Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.persistence.enabled }}
+            {{- if $.Values.persistence.enabled }}
             - name: workspace
               mountPath: /home/opencode
             {{- end }}
-            {{- if .Values.config.opencodeJson }}
+            {{- if $.Values.config.opencodeJson }}
             - name: config
               mountPath: /home/opencode/.config/opencode/opencode.json
               subPath: opencode.json
             {{- end }}
-            {{- if .Values.config.settingsJson }}
+            {{- if $.Values.config.settingsJson }}
             - name: config
               mountPath: /home/opencode/.config/openchamber/settings.json
               subPath: settings.json
             {{- end }}
-            {{- if .Values.config.opennomadJson }}
+            {{- if $.Values.config.opennomadJson }}
             - name: config
               mountPath: /home/opencode/.config/opennomad/opennomad.json
               subPath: opennomad.json
             {{- end }}
-            {{- with .Values.volumeMounts }}
+            {{- with $.Values.volumeMounts }}
               {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
-        {{- if .Values.persistence.enabled }}
+        {{- if $.Values.persistence.enabled }}
         - name: workspace
           persistentVolumeClaim:
-            claimName: {{ include "opencode.fullname" . }}-workspace
+            claimName: {{ include "opencode.fullname" $ }}-workspace
         {{- end }}
         - name: config
           configMap:
-            name: {{ include "opencode.fullname" . }}-config
-        {{- with .Values.volumes }}
+            name: {{ include "opencode.fullname" $ }}-config
+        {{- with $.Values.volumes }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with (index $.Values $component).nodeSelector | default $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with (index $.Values $component).affinity | default $.Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with (index $.Values $component).tolerations | default $.Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

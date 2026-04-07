@@ -60,3 +60,11 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Selector labels with component
+*/}}
+{{- define "opencode.selectorLabelsComponent" -}}
+{{ include "opencode.selectorLabels" .context }}
+app.kubernetes.io/component: {{ .component }}
+{{- end }}

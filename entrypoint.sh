@@ -70,27 +70,38 @@ fi
 mkdir -p /home/opencode/.config/opennomad
 
 # --- PM2 Orchestration ---
+# Generate PM2 Ecosystem file based on requested services
+# Default to both for backward compatibility
+RUN_SERVER="${RUN_SERVER:-true}"
+RUN_UI="${RUN_UI:-true}"
 
-# Generate PM2 Ecosystem file (always refreshed to ensure host/port consistency)
 cat <<EOF > /home/opencode/ecosystem.config.json
 {
   "apps": [
-    {
-      "name": "opencode-server",
-      "script": "opencode",
-      "args": "serve --port 41851 --hostname 0.0.0.0",
-      "interpreter": "none",
-      "autorestart": true,
-      "watch": false
-    },
-    {
-      "name": "openchamber-ui",
-      "script": "openchamber",
-      "args": "--foreground --host 0.0.0.0 --ui-password ${UI_PASSWORD:-be-creative-here}",
-      "interpreter": "none",
-      "autorestart": true,
-      "watch": false
-    }
+$(
+  APPS=()
+  if [[ "${RUN_SERVER}" == "true" ]]; then
+    APPS+=("    {
+      \"name\": \"opencode-server\",
+      \"script\": \"opencode\",
+      \"args\": \"serve --port 41851 --hostname 0.0.0.0\",
+      \"interpreter\": \"none\",
+      \"autorestart\": true,
+      \"watch\": false
+    }")
+  fi
+  if [[ "${RUN_UI}" == "true" ]]; then
+    APPS+=("    {
+      \"name\": \"openchamber-ui\",
+      \"script\": \"openchamber\",
+      \"args\": \"--foreground --host 0.0.0.0 --ui-password ${UI_PASSWORD:-be-creative-here}\",
+      \"interpreter\": \"none\",
+      \"autorestart\": true,
+      \"watch\": false
+    }")
+  fi
+  (IFS=$',\n'; echo "${APPS[*]}")
+)
   ]
 }
 EOF

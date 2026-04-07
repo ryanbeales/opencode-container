@@ -25,7 +25,22 @@ securityContext: {}
   # runAsGroup: 1000
   # runAsNonRoot: true
 
-runAsRoot: false
+runAsRoot: true
+splitDeployment: false
+
+# Individual settings for split deployment
+server:
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+ui:
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
 service:
   type: ClusterIP
   port: 80
