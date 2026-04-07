@@ -14,8 +14,9 @@ spec:
       name: http
   selector:
     {{- include "opencode.selectorLabelsComponent" (dict "context" . "component" (ternary "ui" "combined" .Values.splitDeployment)) | nindent 4 }}
+
+{{ if .Values.splitDeployment }}
 ---
-{{- if .Values.splitDeployment }}
 apiVersion: v1
 kind: Service
 metadata:

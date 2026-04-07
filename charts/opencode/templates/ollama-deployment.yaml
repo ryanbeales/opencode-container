@@ -47,9 +47,10 @@ spec:
             claimName: {{ include "opencode.fullname" . }}-ollama
           {{- else }}
           emptyDir: {}
-          {{- end }}
+          {{ end }}
+
+{{ if .Values.persistence.enabled }}
 ---
-{{- if .Values.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
