@@ -81,7 +81,7 @@ spec:
                      {{- else if $.Values.gateway.enabled -}}
                      {{- (printf "http://%s" $.Values.gateway.hostname) | quote -}}
                      {{- else -}}
-                     {{- (printf "http://%s" (include "opencode.fullname" $)) | quote -}}
+                     {{- (printf "http://%s%s" (include "opencode.fullname" $) (if $.Values.splitDeployment "-server" "")) | quote -}}
                      {{- end }}
           {{- with $.Values.livenessProbe }}
           livenessProbe:
