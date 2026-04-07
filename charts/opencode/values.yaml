@@ -100,13 +100,11 @@ resources:
     memory: 1Gi
 
 livenessProbe:
-  httpGet:
-    path: /health
-    port: 3000
+  tcpSocket:
+    port: http
 readinessProbe:
-  httpGet:
-    path: /health
-    port: 3000
+  tcpSocket:
+    port: http
 
 autoscaling:
   enabled: false
