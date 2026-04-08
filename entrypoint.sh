@@ -93,6 +93,7 @@ $(
       \"script\": \"opencode\",
       \"args\": \"serve --port 41851 --hostname 0.0.0.0\",
       \"interpreter\": \"none\",
+      \"cwd\": \"/home/opencode\",
       \"autorestart\": true,
       \"watch\": false
     }")
@@ -103,6 +104,7 @@ $(
       \"script\": \"openchamber\",
       \"args\": \"--foreground --host 0.0.0.0 --ui-password ${UI_PASSWORD:-be-creative-here}\",
       \"interpreter\": \"none\",
+      \"cwd\": \"/home/opencode\",
       \"autorestart\": true,
       \"watch\": false
     }")
@@ -117,6 +119,9 @@ EOF
 [[ "${RUN_AS_ROOT}" != "true" ]] && chown -R opencode:opencode /home/opencode 2>/dev/null || true
 chmod 644 /home/opencode/.config/openchamber/settings.json 2>/dev/null || true
 chmod 644 /home/opencode/.config/opencode/opencode.json 2>/dev/null || true
+
+# Change to workspace directory for all subsequent commands
+cd /home/opencode
 
 # If we are just running a one-off command, use gosu directly unless root mode
 if [ "$#" -gt 0 ]; then
