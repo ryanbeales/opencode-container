@@ -12,7 +12,14 @@ export OLLAMA_MODEL="${OLLAMA_MODEL:-gpt-oss:20b}"
 export OPENCODE_MODEL="ollama/${OLLAMA_MODEL}"
 export ZEN_MODEL="ollama/${OLLAMA_MODEL}"
 export OPENCODE_SKIP_START=true
+# Ensure HOME is correct (OpenCode apps rely on this)
+export HOME="/home/opencode"
 export OPENCODE_HOST="${OPENCODE_HOST:-http://localhost:41851}"
+
+# Ensure /bin/bash is linked (Debian Bookworm default is /usr/bin/bash)
+if [ ! -f /bin/bash ] && [ -f /usr/bin/bash ]; then
+    ln -s /usr/bin/bash /bin/bash
+fi
 
 # Ensure home exists
 mkdir -p /home/opencode

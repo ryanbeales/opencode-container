@@ -12,9 +12,13 @@ RUN apt-get update && apt-get install -y \
     g++ \
     build-essential \
     python3 \
+    python-is-python3 \
     tini \
     gosu \
     procps \
+    net-tools \
+    iproute2 \
+    dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Create 'opencode' user and group with UID 1000, and delete the existing 'node' user first to reclaim the UID
